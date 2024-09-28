@@ -8,7 +8,7 @@ const app = express();
 const client = new Client({
     user: 'dbmasteruser',          // Usuario de PostgreSQL
     host: 'ls-ef6cea836d847f09c85f3d354ae9db50bd1912c5.c1a60uoi6neh.us-east-1.rds.amazonaws.com',           // Host de la base de datos (o IP del servidor)
-    database: 'gdb_3030',       // Nombre de la base de datos
+    database: 'gdb_3034',       // Nombre de la base de datos
     password: 'x|8)]Xu5q6&[^8Ps[OiMDo*NppV5!H1g',   // Contraseña del usuario
     port: 5432, 
     ssl: {
@@ -34,20 +34,37 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-//Endpoints
-// Endpoint para consultar todas las tablas del esquema public
+/// Endpoint para consultar todas las tablas del esquema public
 app.get('/tablas', async (req, res) => {
   try {
     const query = `
       SELECT table_name 
       FROM information_schema.tables 
-      WHERE table_schema = 'public';
+      WHERE table_schema = 'public'
+      AND table_name NOT IN ('geography_columns', 'geometry_columns', 'spatial_ref_sys');
     `;
     const result = await client.query(query);
     res.json(result.rows);
   } catch (err) {
     console.error('Error ejecutando la consulta', err);
     res.status(500).send('Error al obtener las tablas');
+  }
+});
+
+// tablas geo
+
+app.get('/tablasgeo', async (req, res) => {
+  try {
+    const query = `
+      SELECT f_table_name AS table_name
+      FROM geometry_columns
+      WHERE f_table_schema = 'public';
+    `;
+    const result = await client.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error ejecutando la consulta', err);
+    res.status(500).send('Error al obtener las tablas con geometría');
   }
 });
 
@@ -67,7 +84,7 @@ app.get('/tablas/:nombreTabla', async (req, res) => {
     }
   });
 
-// Desplegar en un servicio local a través del puerto 3030
+// Desplegar en un servicio local a través del puerto 3034
 app.listen(3034, () => {
     console.log('Servidor ejecutándose en http://localhost:3034');
 });
